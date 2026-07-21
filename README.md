@@ -66,7 +66,7 @@ normal or anomalous in real time.
 ## Repository layout
 
 ```
-clad-tool/
+CLAD_Framework/
 ├── quickstart.py                  # end-to-end run on bundled data (offline, CPU-ok)
 ├── requirements.txt
 ├── data/
