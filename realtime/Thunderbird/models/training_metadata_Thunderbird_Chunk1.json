@@ -1,0 +1,12 @@
+{
+  "dataset": "Thunderbird_Chunk1",
+  "vocab_size": 609,
+  "sequence_length": 80,
+  "block_size": 500,
+  "embed_dim": 64,
+  "hidden_dim": 128,
+  "num_epochs": 5,
+  "final_accuracy": 0.9978584829169848,
+  "total_logs": 70404049,
+  "training_sequences": 47311320
+}

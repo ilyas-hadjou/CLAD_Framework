@@ -1,0 +1,12 @@
+{
+  "dataset": "BGL",
+  "vocab_size": 99,
+  "sequence_length": 80,
+  "block_size": 500,
+  "embed_dim": 64,
+  "hidden_dim": 128,
+  "num_epochs": 5,
+  "final_accuracy": 0.9982825942700273,
+  "total_logs": 4747957,
+  "training_sequences": 3190277
+}

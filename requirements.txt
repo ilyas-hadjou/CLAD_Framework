@@ -1,0 +1,23 @@
+# Core (parser runtime + evaluation + classifier inference/training)
+# Verified with Python 3.12 and torch 2.8.0 (the shipped .pth checkpoints were
+# saved with this stack; any torch >= 2.0 should load them).
+torch==2.8.0
+pandas>=1.5
+numpy>=1.23
+scikit-learn>=1.0
+tqdm>=4.65
+matplotlib>=3.5
+
+# Offline parser-bank synthesis only (requires a GPU with >= 16 GB VRAM for
+# Qwen2.5-Coder-7B-Instruct in FP16; not needed to run the shipped banks)
+transformers>=4.40
+accelerate>=0.30
+sentence-transformers>=2.2
+psutil>=5.9
+seaborn>=0.12
+
+# Scalability experiment only (Drain baseline used as the online-cost proxy)
+logparser3>=1.0.1
+
+# Notebooks
+jupyter

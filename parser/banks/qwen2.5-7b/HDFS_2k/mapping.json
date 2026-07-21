@@ -1,0 +1,16 @@
+{
+  "0": "BLOCK* NameSystem.addStoredBlock: blockMap updated: <*>:<*> is added to blk_<*> size <*>",
+  "1": "PacketResponder <*> for block blk_<*> terminating",
+  "2": "Received block blk_<*> of size <*> from /<*>",
+  "3": "Receiving block blk_<*> src: /<*>:<*> dest: /<*>:<*>",
+  "4": "Deleting block blk_<*> file /<*>/blk_<*>",
+  "5": "BLOCK* NameSystem.delete: blk_<*> is added to invalidSet of <*>:<*>",
+  "6": "BLOCK* NameSystem.allocateBlock: /<*>/part-<*>. blk_<*>",
+  "7": "<*>:<*> Served block blk_<*> to /<*>",
+  "8": "<*>:<*>:Got exception while serving blk_<*> to /<*>:",
+  "9": "Verification succeeded for blk_<*>",
+  "10": "BLOCK* ask <*>:<*> to delete  blk_<*>",
+  "11": "Received block blk_<*> src: /<*>:<*> dest: /<*>:<*> of size <*>",
+  "12": "<*>:<*> Starting thread to transfer block blk_<*> to <*>:<*>",
+  "13": "BLOCK* ask <*>:<*> to replicate blk_<*> to datanode(s) <*>:<*>"
+}
