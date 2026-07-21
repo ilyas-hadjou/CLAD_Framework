@@ -1,11 +1,67 @@
-# CLAD — Contextual Log Anomaly Detection
+# CLAD: Contextual Log Anomaly Detection
+
+> 📄 **Publication**: This work will be published in the **45th IEEE International Symposium on Reliable Distributed Systems (SRDS 2026)**.
 
 CLAD is a two-stage tool for log analysis in distributed systems. An LLM
-(Qwen2.5-Coder-7B-Instruct) is used **offline** to synthesize one small Python
+is used **offline** to synthesize one small Python
 parsing function per log template, compiled into a *Parser Bank*; at runtime,
 parsing is deterministic function matching with no LLM calls. A lightweight
 Transformer classifier then labels sliding windows of parsed event IDs as
 normal or anomalous in real time.
+
+---
+
+## Authors & Affiliation
+
+* **Hadjou Ilyas** (`hadjousslab@knu.ac.kr`)
+* **Irshad Khan** (`irshad.cs@knu.ac.kr`)
+* **Young-Woo Kwon** (`ywkwon@knu.ac.kr`)
+
+**School of Computer Science and Engineering, Kyungpook National University, Daegu, South Korea.**
+
+---
+
+## System Architecture
+
+<p align="center">
+  <img src="docs/figures/fig1_overview.png" alt="Overview of the CLAD framework" width="850"/>
+  <br>
+  <em><b>Fig. 1:</b> Overview of the CLAD framework, consisting of contextual log parsing and Transformer-based anomaly sequence classification.</em>
+</p>
+
+<br>
+
+<p align="center">
+  <img src="docs/figures/fig2_parser_architecture.png" alt="CLAD-Parser architecture" width="850"/>
+  <br>
+  <em><b>Fig. 2:</b> CLAD-Parser architecture: an offline foundry compiles historical templates into a Parser Bank.</em>
+</p>
+
+<br>
+
+<p align="center">
+  <img src="docs/figures/fig3_workflow.png" alt="Parser Bank generation workflow" width="850"/>
+  <br>
+  <em><b>Fig. 3:</b> Parser Bank generation workflow: sample, synthesise, validate, compile.</em>
+</p>
+
+<br>
+
+<p align="center">
+  <img src="docs/figures/fig4_online_pipeline.png" alt="CLAD online anomaly-detection pipeline" width="850"/>
+  <br>
+  <em><b>Fig. 4:</b> CLAD online anomaly-detection pipeline.</em>
+</p>
+
+<br>
+
+<p align="center">
+  <img src="docs/figures/fig5_classifier.png" alt="Architecture of CLAD-Classifier" width="850"/>
+  <br>
+  <em><b>Fig. 5:</b> Architecture of CLAD-Classifier.</em>
+</p>
+
+---
 
 ## Repository layout
 
