@@ -69,6 +69,8 @@ normal or anomalous in real time.
 CLAD_Framework/
 ├── quickstart.py                  # end-to-end run on bundled data (offline, CPU-ok)
 ├── requirements.txt
+├── docs/
+│   └── figures/                   # architecture diagrams (Fig 1 - Fig 5)
 ├── data/
 │   ├── loghub-2k/                 # bundled Loghub-2k logs (11 systems)
 │   ├── samples/                   # small labeled BGL event stream for the quickstart
