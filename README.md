@@ -24,7 +24,7 @@ normal or anomalous in real time.
 ## System Architecture
 
 <p align="center">
-  <img src="docs/figures/fig1_overview.png" alt="Overview of the CLAD framework" width="850"/>
+  <img src="docs/framework_new2.png" alt="Overview of the CLAD framework" width="850"/>
   <br>
   <em><b>Fig. 1:</b> Overview of the CLAD framework, consisting of contextual log parsing and Transformer-based anomaly sequence classification.</em>
 </p>
@@ -32,7 +32,7 @@ normal or anomalous in real time.
 <br>
 
 <p align="center">
-  <img src="docs/figures/fig2_parser_architecture.png" alt="CLAD-Parser architecture" width="850"/>
+  <img src="docs/parser-bank.png" alt="CLAD-Parser architecture" width="850"/>
   <br>
   <em><b>Fig. 2:</b> CLAD-Parser architecture: an offline foundry compiles historical templates into a Parser Bank.</em>
 </p>
@@ -40,7 +40,7 @@ normal or anomalous in real time.
 <br>
 
 <p align="center">
-  <img src="docs/figures/fig3_workflow.png" alt="Parser Bank generation workflow" width="850"/>
+  <img src="docs/offline_parser_workflow.png" alt="Parser Bank generation workflow" width="850"/>
   <br>
   <em><b>Fig. 3:</b> Parser Bank generation workflow: sample, synthesise, validate, compile.</em>
 </p>
@@ -48,7 +48,7 @@ normal or anomalous in real time.
 <br>
 
 <p align="center">
-  <img src="docs/figures/fig4_online_pipeline.png" alt="CLAD online anomaly-detection pipeline" width="850"/>
+  <img src="docs/real-time-anomaly-detection.png" alt="CLAD online anomaly-detection pipeline" width="850"/>
   <br>
   <em><b>Fig. 4:</b> CLAD online anomaly-detection pipeline.</em>
 </p>
@@ -56,7 +56,7 @@ normal or anomalous in real time.
 <br>
 
 <p align="center">
-  <img src="docs/figures/fig5_classifier.png" alt="Architecture of CLAD-Classifier" width="850"/>
+  <img src="docs/transformer1.jpg" alt="Architecture of CLAD-Classifier" width="850"/>
   <br>
   <em><b>Fig. 5:</b> Architecture of CLAD-Classifier.</em>
 </p>
