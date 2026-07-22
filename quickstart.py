@@ -24,9 +24,9 @@ BANK = sys.argv[1] if len(sys.argv) > 1 else "qwen2.5-7b"
 
 def step1_parser():
     print("=" * 70)
-    print(f"STEP 1: CLAD-Parser on Loghub-2k (bank: {BANK})")
+    print("STEP 1: CLAD-Parser on Loghub-2k (template-grounded)")
     print("=" * 70)
-    subprocess.run([sys.executable, str(ROOT / "parser/eval/run_parser_2k.py"), BANK], check=True)
+    subprocess.run([sys.executable, str(ROOT / "parser/eval/run_parser_grounded.py")], check=True)
     subprocess.run([sys.executable, str(ROOT / "parser/eval/score_parser.py"), "CLAD-Parser"], check=True)
 
 

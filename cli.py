@@ -16,6 +16,7 @@ Examples:
 import argparse
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -44,6 +45,28 @@ def _read_input(inp: str):
     return inp.splitlines(), None
 
 
+def _normalize_template(t: str) -> str:
+    """Normalize bank wildcards to the standard Loghub `<*>` style."""
+    t = t.replace(".*", ".<*>")
+    t = re.sub(r"(?<![\w<>])\*(?![\w<>])", "<*>", t)
+    return re.sub(r"(<\*>\s*)+", "<*> ", t).strip()
+
+
+_MASKS = [
+    (re.compile(r"0x[0-9a-fA-F]+"), "<*>"),                      # hex
+    (re.compile(r"\b\d{1,3}(\.\d{1,3}){3}(:\d+)?\b"), "<*>"),    # IPs
+    (re.compile(r"(?<=[ =:(])/[^\s]+"), "<*>"),                  # paths
+    (re.compile(r"\b\d+\b"), "<*>"),                             # integers
+]
+
+
+def _mask_fallback(line: str) -> str:
+    """Generic template for lines no bank function matches (instead of UNKNOWN)."""
+    for rx, rep in _MASKS:
+        line = rx.sub(rep, line)
+    return re.sub(r"(<\*>\s*)+", "<*> ", line).strip()
+
+
 def run_parse(args, lines, df):
     """Parse raw log lines with a compiled parser bank (reuses parser/eval helpers)."""
     parser_eval = _load_module(ROOT / "parser/eval/run_parser_2k.py", "clad_parser_eval")
@@ -60,7 +83,11 @@ def run_parse(args, lines, df):
         sys.exit(f"[parse] ERROR: no parser bank at {bank_path}")
 
     bank = parser_eval.load_module(bank_path, f"clad_bank_{args.system.lower()}")
-    results = [{"line": ln, "template": parser_eval.predict_template(bank, ln)} for ln in lines]
+    results = []
+    for ln in lines:
+        t = parser_eval.predict_template(bank, ln)
+        t = _mask_fallback(ln) if t == "UNKNOWN" else _normalize_template(t)
+        results.append({"line": ln, "template": t})
 
     n_templates = len({r["template"] for r in results})
     unknown = sum(1 for r in results if r["template"] == "UNKNOWN")
