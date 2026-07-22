@@ -37,24 +37,6 @@ normal or anomalous in real time.
   <em><b>Fig. 2:</b> CLAD-Parser architecture: an offline foundry compiles historical templates into a Parser Bank.</em>
 </p>
 
-<br>
-
-<p align="center">
-  <img src="docs/offline_parser_workflow.png" alt="Parser Bank generation workflow" width="850"/>
-  <br>
-  <em><b>Fig. 3:</b> Parser Bank generation workflow: sample, synthesise, validate, compile.</em>
-</p>
-
-<br>
-
-<p align="center">
-  <img src="docs/real-time-anomaly-detection.png" alt="CLAD online anomaly-detection pipeline" width="850"/>
-  <br>
-  <em><b>Fig. 4:</b> CLAD online anomaly-detection pipeline.</em>
-</p>
-
-<br>
-
 <p align="center">
   <img src="docs/transformer1.jpg" alt="Architecture of CLAD-Classifier" width="850"/>
   <br>
