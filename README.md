@@ -24,7 +24,7 @@ normal or anomalous in real time.
 ## System Architecture
 
 <p align="center">
-  <img src="docs/framework_new2.png" alt="Overview of the CLAD framework" width="850"/>
+  <img src="docs/framework_new2.jpg" alt="Overview of the CLAD framework" width="850"/>
   <br>
   <em><b>Fig. 1:</b> Overview of the CLAD framework, consisting of contextual log parsing and Transformer-based anomaly sequence classification.</em>
 </p>
@@ -32,7 +32,7 @@ normal or anomalous in real time.
 <br>
 
 <p align="center">
-  <img src="docs/parser-bank.png" alt="CLAD-Parser architecture" width="850"/>
+  <img src="docs/parser-bank.jpg" alt="CLAD-Parser architecture" width="850"/>
   <br>
   <em><b>Fig. 2:</b> CLAD-Parser architecture: an offline foundry compiles historical templates into a Parser Bank.</em>
 </p>
@@ -51,8 +51,7 @@ normal or anomalous in real time.
 CLAD_Framework/
 ├── quickstart.py                  # end-to-end run on bundled data (offline, CPU-ok)
 ├── requirements.txt
-├── docs/
-│   └── figures/                   # architecture diagrams (Fig 1 - Fig 5)
+├── docs/                          # architecture diagrams (Fig 1 - Fig 5)
 ├── data/
 │   ├── loghub-2k/                 # bundled Loghub-2k logs (11 systems)
 │   ├── samples/                   # small labeled BGL event stream for the quickstart
