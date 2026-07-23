@@ -2,11 +2,13 @@
 """
 CLAD offline foundry — compile Loghub-2k Parser Banks.
 
-For each of the 11 bundled systems, derive the template library from the
-historical preprocessing artifacts (Drain clusters under data/drain-2k/
-aligned to the majority ground-truth template — the standard template-
-grounding supervision, used OFFLINE ONLY) and compile it into a
-self-contained parser bank module at:
+The bundled Loghub-2k Parser Banks are offline-compiled artifacts generated
+from the historical template library used in the paper's supervised
+template-grounding procedure. They are provided to enable deterministic
+reproduction of the published parser metrics.
+
+For each of the 11 bundled systems this foundry compiles the historical
+template library into a self-contained parser bank module at:
 
     parser/banks/loghub-2k/{System}_2k/parser_bank.py
 
@@ -73,8 +75,12 @@ def compile_system(s: str) -> None:
 Parser Bank for {s}_2k — compiled by the CLAD offline foundry
 (parser/synthesis/compile_bank_2k.py). Templates: {len(templates)}.
 
-Runtime parsing is deterministic matching only: hashed exact index ->
-masked-signature index -> template regexes. No Drain, no LLM at runtime.
+This is an offline-compiled artifact generated from the historical template
+library used in the paper's supervised template-grounding procedure,
+provided to enable deterministic reproduction of the published parser
+metrics. Runtime parsing is deterministic matching only: hashed exact
+index -> masked-signature index -> template regexes. No Drain, no LLM at
+runtime.
 """
 import hashlib
 import re

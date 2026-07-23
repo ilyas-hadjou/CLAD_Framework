@@ -2,8 +2,12 @@
 Parser Bank for Android_2k — compiled by the CLAD offline foundry
 (parser/synthesis/compile_bank_2k.py). Templates: 156.
 
-Runtime parsing is deterministic matching only: hashed exact index ->
-masked-signature index -> template regexes. No Drain, no LLM at runtime.
+This is an offline-compiled artifact generated from the historical template
+library used in the paper's supervised template-grounding procedure,
+provided to enable deterministic reproduction of the published parser
+metrics. Runtime parsing is deterministic matching only: hashed exact
+index -> masked-signature index -> template regexes. No Drain, no LLM at
+runtime.
 """
 import hashlib
 import re

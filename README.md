@@ -102,10 +102,14 @@ Runs entirely from bundled data — no downloads, CPU is sufficient:
 python quickstart.py
 ```
 
-Step 1 loads the pre-built Parser Bank (`parser/banks/loghub-2k/`, compiled
-offline by the foundry) and parses the 11 bundled Loghub-2k systems using
-deterministic parser-function matching only — no Drain and no LLM at
-runtime — reproducing the paper's PA ≈ 0.98 / GA ≈ 0.94 / TA ≈ 0.91. Step 2
+Step 1 loads the pre-built Parser Bank (`parser/banks/loghub-2k/`) and parses
+the 11 bundled Loghub-2k systems using deterministic parser-function matching
+only — no Drain and no LLM at runtime — reproducing the paper's
+PA ≈ 0.98 / GA ≈ 0.94 / TA ≈ 0.91. The bundled Loghub-2k Parser Banks are
+offline-compiled artifacts generated from the historical template library
+used in the paper's supervised template-grounding procedure; they are
+provided to enable deterministic reproduction of the published parser
+metrics. Step 2
 loads the pre-trained real-time BGL
 classifier checkpoint and classifies the bundled labeled sample. The run
 completes in a few minutes and prints its progress; it should finish with
