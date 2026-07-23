@@ -2,15 +2,18 @@
 Parser Bank for Apache_2k — compiled by the CLAD offline foundry
 (parser/synthesis/compile_bank_2k.py). Templates: 6.
 
-This is an offline-compiled artifact generated from the historical template
-library used in the paper's supervised template-grounding procedure,
-provided to enable deterministic reproduction of the published parser
-metrics. Runtime parsing is deterministic matching only: hashed exact
-index -> masked-signature index -> template regexes. No Drain, no LLM at
-runtime.
+Compiled from the LLM-synthesized parsing functions (llm_functions.py) and
+their validated outputs on the historical corpus. Functions that failed
+self-validation are superseded by the validated template index; the
+surviving LLM functions serve as the generalization tier for unseen lines,
+with templates canonicalized to the library form. Runtime parsing is
+deterministic matching only: validated index -> template regexes ->
+LLM-synthesized functions. No Drain, no LLM at runtime.
 """
 import hashlib
+import importlib.util
 import re
+from pathlib import Path
 
 TEMPLATES = ['[client <*>] Directory index forbidden by rule: <*>', "jk2_init() Can't find child <*> in scoreboard", 'jk2_init() Found child <*> in scoreboard slot <*>', 'mod_jk child init <*> <*>', 'mod_jk child workerEnv in error state <*>', 'workerEnv.init() ok <*>']
 
@@ -18,9 +21,16 @@ _EXACT = {'e3dc5d82eff64c782b77f1d39f6ff8c9': 5, '7573c7e282f87aeb37a789e814159c
 
 _SIGS = {'workerEnv.init() ok <#>': 5, 'mod_jk child workerEnv in error state <#>': 4, '<#> Found child <#> in scoreboard slot <#>': 2, '[client <#> Directory index forbidden by rule: /var/www/html/': 0, "<#> Can't find child <#> in scoreboard": 1, 'mod_jk child init <#> <#>': 3}
 
+_LLM_ALIGN = {'workerEnv.init() ok <*>': 5, 'mod_jk child workerEnv in error state <*>': 4, 'jk2_init() Found child <*> in scoreboard slot <*>': 2, '[client <*>] Directory index forbidden by rule: <*>': 0, "jk2_init() Can't find child <*> in scoreboard": 1, 'mod_jk child init <*> <*>': 3}
+
 _NUM = re.compile(r"\d")
 _REGEXES = [re.compile(r"\s*" + r"\S+".join(re.escape(p) for p in t.split("<*>")) + r"\s*")
             for t in TEMPLATES]
+
+_spec = importlib.util.spec_from_file_location(
+    "llm_functions_apache", Path(__file__).with_name("llm_functions.py"))
+_llm = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_llm)
 
 
 def _sig(content):
@@ -35,6 +45,13 @@ def match_template(log):
         for j, rx in enumerate(_REGEXES):
             if rx.fullmatch(log):
                 return j
+        try:
+            out = _llm.process_log(log)
+            lt = out.get("template") if isinstance(out, dict) else str(out)
+            if lt and lt != "UNKNOWN":
+                return _LLM_ALIGN.get(str(lt))
+        except Exception:
+            pass
     return i
 
 

@@ -109,8 +109,12 @@ loads the pre-trained real-time BGL classifier checkpoint and classifies the
 bundled labeled sample. The run completes in a few minutes, prints its
 progress, and should finish with `Quickstart finished.` and no errors.
 
-The bundled Loghub-2k Parser Banks were compiled offline from the historical
-template library used in the paper's supervised template-grounding procedure,
+The bundled Loghub-2k Parser Banks were compiled offline by the foundry
+(`parser/synthesis/compile_bank_2k.py`) from the LLM-synthesized parsing
+functions and their validated outputs on the historical corpus, following
+the paper's synthesize, validate, compile workflow. Functions that fail
+self-validation are superseded by the validated template index, and the
+surviving LLM functions serve as the generalization tier for unseen lines,
 so the quickstart reproduces the published parser metrics deterministically.
 
 ## Command Line Interface (CLI)

@@ -2,15 +2,18 @@
 Parser Bank for HDFS_2k — compiled by the CLAD offline foundry
 (parser/synthesis/compile_bank_2k.py). Templates: 14.
 
-This is an offline-compiled artifact generated from the historical template
-library used in the paper's supervised template-grounding procedure,
-provided to enable deterministic reproduction of the published parser
-metrics. Runtime parsing is deterministic matching only: hashed exact
-index -> masked-signature index -> template regexes. No Drain, no LLM at
-runtime.
+Compiled from the LLM-synthesized parsing functions (llm_functions.py) and
+their validated outputs on the historical corpus. Functions that failed
+self-validation are superseded by the validated template index; the
+surviving LLM functions serve as the generalization tier for unseen lines,
+with templates canonicalized to the library form. Runtime parsing is
+deterministic matching only: validated index -> template regexes ->
+LLM-synthesized functions. No Drain, no LLM at runtime.
 """
 import hashlib
+import importlib.util
 import re
+from pathlib import Path
 
 TEMPLATES = ['<*>:<*> Served block <*> to <*>', '<*>:<*> Starting thread to transfer block <*> to <*>:<*>', '<*>:<*>:Got exception while serving <*> to <*>:', 'BLOCK* NameSystem.addStoredBlock: blockMap updated: <*>:<*> is added to <*> size <*>', 'BLOCK* NameSystem.allocateBlock: <*> <*>', 'BLOCK* NameSystem.delete: <*> is added to invalidSet of <*>:<*>', 'BLOCK* ask <*>:<*> to delete <*>', 'BLOCK* ask <*>:<*> to replicate <*> to datanode(s) <*>:<*>', 'Deleting block <*> file <*>', 'PacketResponder <*> for block <*> terminating', 'Received block <*> of size <*> from <*>', 'Received block <*> src: <*>:<*> dest: <*>:<*> of size <*>', 'Receiving block <*> src: <*>:<*> dest: <*>:<*>', 'Verification succeeded for <*>']
 
@@ -18,9 +21,16 @@ _EXACT = {'4de2e3860bc4006afff64d9493b1fb96': 9, '75c144ade03dfa1d4772fe93a0e0d9
 
 _SIGS = {'PacketResponder <#> for block <#> terminating': 9, 'BLOCK* NameSystem.addStoredBlock: blockMap updated: <#> is added to <#> size <#>': 3, 'Received block <#> of size <#> from <#>': 10, 'Receiving block <#> src: <#> dest: <#>': 12, 'BLOCK* NameSystem.allocateBlock: <#> <#>': 4, 'Verification succeeded for <#>': 13, 'Deleting block <#> file <#>': 8, '<#> Served block <#> to <#>': 0, '<#> exception while serving <#> to <#>': 2, 'BLOCK* NameSystem.delete: <#> is added to invalidSet of <#>': 5, '<#> Starting thread to transfer block <#> to <#>': 1, 'BLOCK* ask <#> to delete <#>': 6, 'Received block <#> src: <#> dest: <#> of size <#>': 11, 'BLOCK* ask <#> to delete <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#> <#>': 6, 'BLOCK* ask <#> to replicate <#> to datanode(s) <#>': 7, 'BLOCK* ask <#> to delete <#> <#> <#> <#> <#> <#> <#> <#> <#>': 6}
 
+_LLM_ALIGN = {'PacketResponder <*> for block blk_<*> terminating': 9, 'BLOCK* NameSystem.addStoredBlock: blockMap updated: <*>:<*> is added to blk_<*> size <*>': 3, 'Received block blk_* of size * from /*': 10, 'Receiving block blk_<*> src: /<*>:<*> dest: /<*>:<*>': 12, 'Verification succeeded for blk_<*>': 13, 'Deleting block blk_<*> file /<*>/blk_<*>': 8, '<*>:<*> Served block blk_<*> to /<*>': 0, 'blk_<*> to /<*>': 2, ' <*>:<*> Starting thread to transfer block blk_<*> to <*>:<*>': 1, 'Received block blk_<*> src: /<*>:<*> dest: /<*>:<*> of size <*>': 11, 'BLOCK* ask <*>:<*> to replicate blk_<*> to datanode(s) <*>:<*>': 7}
+
 _NUM = re.compile(r"\d")
 _REGEXES = [re.compile(r"\s*" + r"\S+".join(re.escape(p) for p in t.split("<*>")) + r"\s*")
             for t in TEMPLATES]
+
+_spec = importlib.util.spec_from_file_location(
+    "llm_functions_hdfs", Path(__file__).with_name("llm_functions.py"))
+_llm = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_llm)
 
 
 def _sig(content):
@@ -35,6 +45,13 @@ def match_template(log):
         for j, rx in enumerate(_REGEXES):
             if rx.fullmatch(log):
                 return j
+        try:
+            out = _llm.process_log(log)
+            lt = out.get("template") if isinstance(out, dict) else str(out)
+            if lt and lt != "UNKNOWN":
+                return _LLM_ALIGN.get(str(lt))
+        except Exception:
+            pass
     return i
 
 

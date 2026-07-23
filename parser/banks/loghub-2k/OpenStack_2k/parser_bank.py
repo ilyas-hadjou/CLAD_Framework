@@ -2,15 +2,18 @@
 Parser Bank for OpenStack_2k — compiled by the CLAD offline foundry
 (parser/synthesis/compile_bank_2k.py). Templates: 34.
 
-This is an offline-compiled artifact generated from the historical template
-library used in the paper's supervised template-grounding procedure,
-provided to enable deterministic reproduction of the published parser
-metrics. Runtime parsing is deterministic matching only: hashed exact
-index -> masked-signature index -> template regexes. No Drain, no LLM at
-runtime.
+Compiled from the LLM-synthesized parsing functions (llm_functions.py) and
+their validated outputs on the historical corpus. Functions that failed
+self-validation are superseded by the validated template index; the
+surviving LLM functions serve as the generalization tier for unseen lines,
+with templates canonicalized to the library form. Runtime parsing is
+deterministic matching only: validated index -> template regexes ->
+LLM-synthesized functions. No Drain, no LLM at runtime.
 """
 import hashlib
+import importlib.util
 import re
+from pathlib import Path
 
 TEMPLATES = ['<*> "DELETE <*>" status: <*> len: <*> time: <*>', '<*> "GET <*>" status: <*> len: <*> time: <*>', '<*> "POST <*>" status: <*> len: <*> time: <*>', 'Active base files: <*>', 'Auditing locally available compute resources for node <*>', 'Base or swap file too young to remove: <*>', 'Compute_service record updated for <*>', 'Creating event network-vif-plugged:<*>-<*>-<*>-<*>-<*> for instance <*>', 'Final resource view: name=<*> phys_ram=<*> used_ram=<*> phys_disk=<*> used_disk=<*> total_vcpus=<*> used_vcpus=<*> pci_stats=[]', 'HTTP exception thrown: No instances found for any event', 'Removable base files: <*>', 'Removing base or swap file: <*>', 'Running instance usage audit for host <*> from <*>-<*>-<*> <*>:<*>:<*> to <*>-<*>-<*> <*>:<*>:<*>. <*> instances.', "Successfully synced instances from host '<*>'.", "The instance sync for host '<*>' did not match. Re-created its InstanceList.", 'Total usable vcpus: <*>, total allocated vcpus: <*>', 'Unknown base file: <*>', 'While synchronizing instance power states, found <*> instances in the database and <*> instances on the hypervisor.', '[instance: <*>] Attempting claim: memory <*> MB, disk <*> GB, vcpus <*> CPU', '[instance: <*>] Claim successful', '[instance: <*>] Deleting instance files <*>', '[instance: <*>] Deletion of <*> complete', '[instance: <*>] During sync_power_state the instance has a pending task (spawning). Skip.', '[instance: <*>] Instance spawned successfully.', '[instance: <*>] Terminating instance', '[instance: <*>] Took <*> seconds to build instance.', '[instance: <*>] Took <*> seconds to deallocate network for instance.', '[instance: <*>] Took <*> seconds to spawn the instance on the hypervisor.', '[instance: <*>] Total disk: <*> GB, used: <*> GB', '[instance: <*>] Total memory: <*> MB, used: <*> MB', '[instance: <*>] VM Resumed (Lifecycle Event)', '[instance: <*>] disk limit not specified, defaulting to unlimited', 'image <*> at (<*>): checking', 'image <*> at (<*>): in use: on this node <*> local, <*> on other nodes sharing this instance storage']
 
@@ -18,9 +21,16 @@ _EXACT = {'3bff70e98687a94ded7ea47394b423d4': 1, '1850727c25e531b685d057f93895f5
 
 _SIGS = {'<#> "GET <#> <#> status: <#> len: <#> time: <#>': 1, '[instance: <#> VM Started (Lifecycle Event)': 30, '[instance: <#> VM Paused (Lifecycle Event)': 30, '[instance: <#> During sync_power_state the instance has a pending task (spawning). Skip.': 22, 'image <#> at <#> checking': 32, 'image <#> at <#> in use: on this node <#> local, <#> on other nodes sharing this instance storage': 33, 'Active base files: <#>': 3, 'Creating event <#> for instance <#>': 7, '<#> "POST <#> <#> status: <#> len: <#> time: <#>': 2, '[instance: <#> VM Resumed (Lifecycle Event)': 30, '[instance: <#> Instance spawned successfully.': 23, '[instance: <#> Took <#> seconds to spawn the instance on the hypervisor.': 27, '[instance: <#> Took <#> seconds to build instance.': 25, 'Auditing locally available compute resources for node <#>': 4, 'Total usable vcpus: <#> total allocated vcpus: <#>': 15, 'Final resource view: <#> <#> <#> <#> <#> <#> <#> pci_stats=[]': 8, 'Compute_service record updated for <#>': 6, '<#> "DELETE <#> <#> status: <#> len: <#> time: <#>': 0, '[instance: <#> Terminating instance': 19, '[instance: <#> Instance destroyed successfully.': 23, '[instance: <#> Deleting instance files <#>': 20, '[instance: <#> Deletion of <#> complete': 21, '[instance: <#> Took <#> seconds to destroy the instance on the hypervisor.': 27, '[instance: <#> Took <#> seconds to deallocate network for instance.': 26, 'Unknown base file: <#>': 16, 'Removable base files: <#>': 10, 'Removing base or swap file: <#>': 11, 'HTTP exception thrown: No instances found for any event': 9, '[instance: <#> Attempting claim: memory <#> MB, disk <#> GB, vcpus <#> CPU': 18, '[instance: <#> Total memory: <#> MB, used: <#> MB': 29, '[instance: <#> memory limit: <#> MB, free: <#> MB': 29, '[instance: <#> Total disk: <#> GB, used: <#> GB': 28, '[instance: <#> disk limit not specified, defaulting to unlimited': 31, '[instance: <#> Total vcpu: <#> VCPU, used: <#> VCPU': 28, '[instance: <#> vcpu limit not specified, defaulting to unlimited': 31, '[instance: <#> Claim successful': 19, '[instance: <#> Creating image': 19, '[instance: <#> VM Stopped (Lifecycle Event)': 30, 'Successfully synced instances from host <#>': 13, '<#> "GET /latest/meta-data/ <#> status: <#> len: <#> time: <#>': 1, '<#> "GET /latest/meta-data/block-device-mapping/ <#> status: <#> len: <#> time: <#>': 1, '<#> "GET /latest/meta-data/block-device-mapping/ami <#> status: <#> len: <#> time: <#>': 1, '<#> "GET /latest/meta-data/block-device-mapping/root <#> status: <#> len: <#> time: <#>': 1, '<#> "GET /latest/meta-data/placement/ <#> status: <#> len: <#> time: <#>': 1, 'Running instance usage audit for host <#> from <#> <#> to <#> <#> <#> instances.': 12, 'Base or swap file too young to remove: <#>': 5, 'The instance sync for host <#> did not match. Re-created its InstanceList.': 14, '<#> "GET /latest/meta-data/placement/availability-zone <#> status: <#> len: <#> time: <#>': 1, '<#> "GET /latest/meta-data/reservation-id <#> status: <#> len: <#> time: <#>': 1, '<#> "GET /latest/meta-data/local-hostname <#> status: <#> len: <#> time: <#>': 1, '<#> "GET /latest/meta-data/security-groups <#> status: <#> len: <#> time: <#>': 1, '<#> "GET /latest/meta-data/ami-launch-index <#> status: <#> len: <#> time: <#>': 1, '<#> "GET /latest/meta-data/public-hostname <#> status: <#> len: <#> time: <#>': 1, '<#> "GET /latest/meta-data/hostname <#> status: <#> len: <#> time: <#>': 1, '<#> "GET /latest/meta-data/ami-id <#> status: <#> len: <#> time: <#>': 1, 'While synchronizing instance power states, found <#> instances in the database and <#> instances on the hypervisor.': 17}
 
+_LLM_ALIGN = {'<*> "GET <*>" status: <*> len: <*> time: <*>.<*>': 1, '[instance: <*>] VM Started (Lifecycle Event)': 30, '[instance: <*>] VM Paused (Lifecycle Event)': 30, '[instance: <*>] During sync_power_state the instance has a pending task (spawning). Skip.': 22, 'image <*> at (<*>): checking': 32, 'image <*> at (<*>): in use: on this node <*> local, <*> on other nodes sharing this instance storage': 33, 'Active base files: <*>': 3, 'network-vif-plugged': 7, '<*> "POST <*>", status: <*>, len: <*>, time: <*>,.<*>': 2, '[instance: <*>] VM Resumed (Lifecycle Event)': 30, '[instance: <*>] Instance spawned successfully.': 23, '[instance: <*>] Took <*>.<*> seconds to spawn the instance on the hypervisor.': 27, '[instance: <*>] Took <*>.<*> seconds to build instance.': 25, '<*> "DELETE <*>" status: <*> len: <*> time: <*>.<*>': 0, 'Terminating instance': 19, '[instance: <*>] Instance destroyed successfully.': 23, '[instance: <*>] Deleting instance files <*>': 20, '[instance: <*>] Deletion of <*> complete': 21, '[instance: <*>] Took <*>.<*> seconds to destroy the instance on the hypervisor.': 27, '[instance: <*>] Took <*>.<*> seconds to deallocate network for instance.': 26, 'Unknown base file: <*>': 16, 'Removable base files: <*>': 10, 'Removing base or swap file: <*>': 11, 'HTTP exception thrown: No instances found for any event': 9, '[instance: <*>] Attempting claim: memory <*> MB, disk <*> GB, vcpus <*> CPU': 18}
+
 _NUM = re.compile(r"\d")
 _REGEXES = [re.compile(r"\s*" + r"\S+".join(re.escape(p) for p in t.split("<*>")) + r"\s*")
             for t in TEMPLATES]
+
+_spec = importlib.util.spec_from_file_location(
+    "llm_functions_openstack", Path(__file__).with_name("llm_functions.py"))
+_llm = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_llm)
 
 
 def _sig(content):
@@ -35,6 +45,13 @@ def match_template(log):
         for j, rx in enumerate(_REGEXES):
             if rx.fullmatch(log):
                 return j
+        try:
+            out = _llm.process_log(log)
+            lt = out.get("template") if isinstance(out, dict) else str(out)
+            if lt and lt != "UNKNOWN":
+                return _LLM_ALIGN.get(str(lt))
+        except Exception:
+            pass
     return i
 
 

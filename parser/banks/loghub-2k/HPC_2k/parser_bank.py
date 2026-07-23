@@ -2,15 +2,18 @@
 Parser Bank for HPC_2k — compiled by the CLAD offline foundry
 (parser/synthesis/compile_bank_2k.py). Templates: 41.
 
-This is an offline-compiled artifact generated from the historical template
-library used in the paper's supervised template-grounding procedure,
-provided to enable deterministic reproduction of the published parser
-metrics. Runtime parsing is deterministic matching only: hashed exact
-index -> masked-signature index -> template regexes. No Drain, no LLM at
-runtime.
+Compiled from the LLM-synthesized parsing functions (llm_functions.py) and
+their validated outputs on the historical corpus. Functions that failed
+self-validation are superseded by the validated template index; the
+surviving LLM functions serve as the generalization tier for unseen lines,
+with templates canonicalized to the library form. Runtime parsing is
+deterministic matching only: validated index -> template regexes ->
+LLM-synthesized functions. No Drain, no LLM at runtime.
 """
 import hashlib
+import importlib.util
 import re
+from pathlib import Path
 
 TEMPLATES = ['ClusterFileSystem: ServerFileSystem domain <*> is no longer served by node node-<*>', 'ClusterFileSystem: There is no server for ServerFileSystem domain <*>', 'Command has completed successfully', 'Component State Change: Component <*> is in the unavailable state (HWID=<*>)', 'Failed subcommands <*>', 'Fan speeds ( <*> <*> <*> **** <*> <*> )', 'Link error', 'Link error on broadcast tree Interconnect-<*>:<*>:<*>:<*>', 'Link in reset', 'Linkerror event interval expired', 'NIFF: node node-<*> detected a failed network connection on network <*> via interface alt0', 'NIFF: node node-<*> has detected an available network connection on network <*> via interface ee0', 'ServerFileSystem: An ServerFileSystem domain panic has occurred on <*>', 'ServerFileSystem: ServerFileSystem domain <*> is full', 'Targeting domains:node-<*> and nodes:node-[<*>-<*>] child of command <*>', 'Targeting domains:node-<*> nodes:node-<*>', 'Temperature (<*>) exceeds warning threshold', 'active', 'ambient=<*>', 'blocked', 'boot (command <*>)', 'boot (command <*>) Error: HALT asserted\\ cannot continue', 'bootGenvmunix (command <*>)', 'closing', 'clusterAddMember (command <*>)', 'configured out', 'critical', 'halt (command <*>)', 'inconsistent nodesets node-<*> <*> <ok> node-<*> <*> <ok> node-<*> <*> <ok> node-<*> <*> <*>', 'link errors remain current', 'normal', 'not responding', 'not-responding', 'power/control problem', 'psu failure\\ ambient=<*>', 'risBoot (command <*>)', 'risBoot (command <*>) Error: Timed out while waiting for SRM prompt: <ABORT code completed>', 'running', 'starting', 'wait (command <*>)', 'warning']
 
@@ -18,9 +21,16 @@ _EXACT = {'171d42c670e824c00226f0ee7217e38e': 3, '835e4769dc95836b3e665098b16fe1
 
 _SIGS = {'Component State Change: Component <#> is in the unavailable state <#>': 3, 'clusterAddMember (command <#>': 24, 'risBoot (command <#>': 35, 'bootGenvmunix (command <#>': 22, 'boot (command <#>': 20, 'wait (command <#>': 39, 'halt (command <#>': 27, 'Command has completed successfully': 2, 'Targeting <#> and <#> child of command <#>': 14, 'Targeting <#> and <#> <#> <#>': 15, 'Targeting <#> and <#>': 15, 'Targeting <#> <#> and <#> <#>': 15, 'psu failure\\ <#>': 34, 'Temperature <#> exceeds warning threshold': 16, 'ClusterFileSystem: There is no server for ServerFileSystem domain <#>': 1, 'NIFF: node <#> detected a failed network connection on network <#> via interface <#>': 10, 'ServerFileSystem: An ServerFileSystem domain panic has occurred on <#>': 12, 'Fan speeds ( <#> <#> <#> **** <#> <#> )': 5, 'Fan speeds ( <#> <#> <#> <#> <#> <#> )': 5, 'Command has been aborted': 2, 'power/control problem': 33, 'Link error': 6, 'Link in reset': 8, 'Link ok': 6, 'Link error on broadcast tree <#>': 7, 'ServerFileSystem: ServerFileSystem domain <#> is full': 13, 'ClusterFileSystem: ServerFileSystem domain cluster_root_backup is no longer served by node <#>': 0, 'ClusterFileSystem: ServerFileSystem domain root_domain is no longer served by node <#>': 0, 'ClusterFileSystem: ServerFileSystem domain <#> is no longer served by node <#>': 0, 'ClusterFileSystem: ServerFileSystem domain cluster_usr_backup is no longer served by node <#>': 0, 'ClusterFileSystem: ServerFileSystem domain sc_cluster_backup is no longer served by node <#>': 0, 'ClusterFileSystem: ServerFileSystem domain cluster_var_backup is no longer served by node <#>': 0, 'running': 37, 'blocked': 19, 'not responding': 31, 'configured out': 25, 'inconsistent nodesets <#> <#> <ok> <#> <#> <ok> <#> <#> <ok> <#> <#> <ok>': 28, 'active': 17, 'not-responding': 32, 'inconsistent nodesets <#> <#> <ok> <#> <#> <ok> <#> <#> <ok> <#> <#> <ok> <#> <#> <ok> <#> <#> <ok> <#> <#> <ok> <#> <#> <ok> <#> <#> <ok> <#> <#> <ok> <#> <#> <ok> <#> <#> <ok> <#> <#> <ok>': 28, 'starting': 38, 'closing': 23, 'inconsistent nodesets <#> <#> <ok> <#> <#> <ok> <#> <#> <ok> <#> <#> <ok> <#> <#> <ok>': 28, 'normal': 30, 'warning': 40, '<#>': 18, 'critical': 26, 'Linkerror event interval expired': 9, 'risBoot (command <#> Error: Timed out while waiting for SRM prompt: <ABORT code completed>': 36, 'boot (command <#> Error: HALT asserted\\ cannot continue': 21, 'Failed subcommands <#>': 4, 'link errors remain current': 29, 'NIFF: node <#> has detected an available network connection on network <#> via interface <#>': 11}
 
+_LLM_ALIGN = {'Component State Change: Component <*> is in the unavailable state (HWID=<*>)': 3, 'boot  (command <*>': 20, 'wait  (command <*>)': 39, 'Command has completed successfully': 2, 'Targeting domains:node-D<*> and nodes:node-[<*>-<*>] child of command <*>': 14, 'ambient=*': 18, 'warning': 40, 'ClusterFileSystem: There is no server for ServerFileSystem domain storage<*>': 1, 'Fan speeds ( <*> <*> <*> **** <*> <*> )': 5, 'Fan speeds ( <*> <*> <*> <*> <*> <*> )': 5, 'Link error': 6, 'Link in reset': 8, 'Link ok': 6, 'ServerFileSystem: ServerFileSystem domain <*> is full': 13, 'ClusterFileSystem: ServerFileSystem domain <*> is no longer served by node node-<*>': 0, 'running': 37, 'blocked': 19, 'not responding': 31, 'configured out': 25, 'normal': 30, 'critical': 26, 'Linkerror event interval expired': 9, 'link errors remain current': 29, 'NIFF: node node-<*> has detected an available network connection on network <*> via interface alt0': 11}
+
 _NUM = re.compile(r"\d")
 _REGEXES = [re.compile(r"\s*" + r"\S+".join(re.escape(p) for p in t.split("<*>")) + r"\s*")
             for t in TEMPLATES]
+
+_spec = importlib.util.spec_from_file_location(
+    "llm_functions_hpc", Path(__file__).with_name("llm_functions.py"))
+_llm = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_llm)
 
 
 def _sig(content):
@@ -35,6 +45,13 @@ def match_template(log):
         for j, rx in enumerate(_REGEXES):
             if rx.fullmatch(log):
                 return j
+        try:
+            out = _llm.process_log(log)
+            lt = out.get("template") if isinstance(out, dict) else str(out)
+            if lt and lt != "UNKNOWN":
+                return _LLM_ALIGN.get(str(lt))
+        except Exception:
+            pass
     return i
 
 

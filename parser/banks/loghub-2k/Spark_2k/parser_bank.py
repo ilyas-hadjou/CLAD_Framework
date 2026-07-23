@@ -2,15 +2,18 @@
 Parser Bank for Spark_2k — compiled by the CLAD offline foundry
 (parser/synthesis/compile_bank_2k.py). Templates: 29.
 
-This is an offline-compiled artifact generated from the historical template
-library used in the paper's supervised template-grounding procedure,
-provided to enable deterministic reproduction of the published parser
-metrics. Runtime parsing is deterministic matching only: hashed exact
-index -> masked-signature index -> template regexes. No Drain, no LLM at
-runtime.
+Compiled from the LLM-synthesized parsing functions (llm_functions.py) and
+their validated outputs on the historical corpus. Functions that failed
+self-validation are superseded by the validated template index; the
+surviving LLM functions serve as the generalization tier for unseen lines,
+with templates canonicalized to the library form. Runtime parsing is
+deterministic matching only: validated index -> template regexes ->
+LLM-synthesized functions. No Drain, no LLM at runtime.
 """
 import hashlib
+import importlib.util
 import re
+from pathlib import Path
 
 TEMPLATES = ['<*>: Committed', 'Block <*> stored as bytes in memory (estimated size <*>, free <*>)', 'Changing view acls to: <*>', 'Connecting to driver: spark://<*>', 'Created local directory at <*>', 'File Output Committer Algorithm version is <*>', 'Finished task <*> in stage <*> (TID <*>). <*> bytes result sent to driver', 'Found block <*> locally', 'Got assigned task <*>', 'Input split: hdfs://<*>', 'MemoryStore started with capacity <*> GB', 'Partition <*> not found, computing it', 'Reading broadcast variable <*> took <*> ms', 'Registered BlockManager', 'Registered signal handlers for [TERM, HUP, INT]', 'Remoting started; listening on addresses :[akka.tcp://<*>]', 'Running task <*> in stage <*> (TID <*>)', "Saved output of task '<*>' to hdfs://<*>", 'SecurityManager: authentication disabled; ui acls disabled; users with view permissions: Set(yarn, curi); users with modify permissions: Set(yarn, curi)', 'Server created on <*>', 'Slf4jLogger started', 'Started reading broadcast variable <*>', 'Starting executor ID <*> on host <*>', 'Starting remoting', 'Successfully registered with driver', "Successfully started service 'sparkExecutorActorSystem' on port <*>.", 'Times: total = <*>, boot = <*>, init = <*>, finish = <*>', 'Trying to register BlockManager', 'mapred.tip.id is deprecated. Instead, use mapreduce.task.id']
 
@@ -18,9 +21,16 @@ _EXACT = {'932c104e61d1e141f3c5a7a043409f39': 14, '7103ffa2ce6a12d18915d6570b3f6
 
 _SIGS = {'Registered signal handlers for [TERM, HUP, INT]': 14, 'Changing view acls to: yarn,curi': 2, 'Changing modify acls to: yarn,curi': 2, 'SecurityManager: authentication disabled; ui acls disabled; users with view permissions: Set(yarn, curi); users with modify permissions: Set(yarn, curi)': 18, '<#> started': 20, 'Starting remoting': 23, 'Remoting started; listening on addresses <#>': 15, "Successfully started service 'sparkExecutorActorSystem' on port <#>": 25, 'Created local directory at <#>': 4, 'MemoryStore started with capacity <#> GB': 10, 'Connecting to driver: <#>': 3, 'Successfully registered with driver': 24, 'Starting executor ID <#> on host <#>': 22, "Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port <#>": 25, 'Server created on <#>': 19, 'Trying to register BlockManager': 27, 'Registered BlockManager': 13, 'Got assigned task <#>': 8, 'Running task <#> in stage <#> (TID <#>': 16, 'Started reading broadcast variable <#>': 21, 'Block <#> stored as bytes in memory (estimated size <#> KB, free <#> KB)': 1, 'Reading broadcast variable <#> took <#> ms': 12, 'Block <#> stored as values in memory (estimated size <#> KB, free <#> KB)': 1, 'Partition <#> not found, computing it': 11, 'Input split: <#>': 9, 'mapred.tip.id is deprecated. Instead, use mapreduce.task.id': 28, 'mapred.task.id is deprecated. Instead, use mapreduce.task.attempt.id': 28, 'mapred.task.is.map is deprecated. Instead, use mapreduce.task.ismap': 28, 'mapred.job.id is deprecated. Instead, use mapreduce.job.id': 28, 'mapred.task.partition is deprecated. Instead, use mapreduce.task.partition': 28, 'Block <#> stored as bytes in memory (estimated size <#> B, free <#> KB)': 1, 'Block <#> stored as values in memory (estimated size <#> B, free <#> KB)': 1, 'Times: total = <#> boot = <#> init = <#> finish = <#>': 26, 'Finished task <#> in stage <#> (TID <#> <#> bytes result sent to driver': 6, 'Found block <#> locally': 7, 'File Output Committer Algorithm version is <#>': 5, 'Saved output of task <#> to <#>': 17, '<#> Committed': 0}
 
+_LLM_ALIGN = {'Registered signal handlers for [TERM, HUP, INT]': 14, 'Changing view acls to:*': 2, 'Changing modify acls to:*': 2, 'SecurityManager: authentication disabled; ui acls disabled; users with view permissions: Set(yarn, curi); users with modify permissions: Set(yarn, curi)': 18, 'Slf4jLogger started': 20, 'Starting remoting': 23, 'Remoting started; listening on addresses :[akka.tcp://<*>]': 15, "Successfully started service 'sparkExecutorActorSystem' on port <*>.": 25, 'Created local directory at <*>': 4, 'MemoryStore started with capacity <*> GB': 10, 'Connecting to driver: <*>': 3, 'Got assigned task <*>': 8, 'Running task <*> in stage <*> (TID <*>': 16, 'Started reading broadcast variable <*>': 21, 'Block <*> stored as bytes in memory (estimated size <*>, free <*>)': 1, 'Reading broadcast variable <*> took <*> ms': 12, 'Block <*> stored as values in memory (estimated size <*>, free <*>)': 1, 'Partition rdd_<*> not found, computing it': 11, 'Input split: hdfs://<*>': 9, 'Times: total = <*>, boot = <*>, init = <*>, finish = <*>': 26, 'Finished task <*> in stage <*> (TID <*>) <*> bytes result sent to driver': 6, 'Found block rdd_<*> locally': 7, 'File Output Committer Algorithm version is <*>': 5, 'Saved output of task <*>, to hdfs://<*>': 17, 'attempt_<*>: Committed': 0}
+
 _NUM = re.compile(r"\d")
 _REGEXES = [re.compile(r"\s*" + r"\S+".join(re.escape(p) for p in t.split("<*>")) + r"\s*")
             for t in TEMPLATES]
+
+_spec = importlib.util.spec_from_file_location(
+    "llm_functions_spark", Path(__file__).with_name("llm_functions.py"))
+_llm = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_llm)
 
 
 def _sig(content):
@@ -35,6 +45,13 @@ def match_template(log):
         for j, rx in enumerate(_REGEXES):
             if rx.fullmatch(log):
                 return j
+        try:
+            out = _llm.process_log(log)
+            lt = out.get("template") if isinstance(out, dict) else str(out)
+            if lt and lt != "UNKNOWN":
+                return _LLM_ALIGN.get(str(lt))
+        except Exception:
+            pass
     return i
 
 

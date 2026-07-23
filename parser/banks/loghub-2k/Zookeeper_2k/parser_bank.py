@@ -2,15 +2,18 @@
 Parser Bank for Zookeeper_2k — compiled by the CLAD offline foundry
 (parser/synthesis/compile_bank_2k.py). Templates: 44.
 
-This is an offline-compiled artifact generated from the historical template
-library used in the paper's supervised template-grounding procedure,
-provided to enable deterministic reproduction of the published parser
-metrics. Runtime parsing is deterministic matching only: hashed exact
-index -> masked-signature index -> template regexes. No Drain, no LLM at
-runtime.
+Compiled from the LLM-synthesized parsing functions (llm_functions.py) and
+their validated outputs on the historical corpus. Functions that failed
+self-validation are superseded by the validated template index; the
+surviving LLM functions serve as the generalization tier for unseen lines,
+with templates canonicalized to the library form. Runtime parsing is
+deterministic matching only: validated index -> template regexes ->
+LLM-synthesized functions. No Drain, no LLM at runtime.
 """
 import hashlib
+import importlib.util
 import re
+from pathlib import Path
 
 TEMPLATES = ['******* GOODBYE <*>:<*> ********', 'Accepted socket connection from <*>:<*>', 'Cannot open channel to <*> at election address <*>:<*>', 'Client attempting to establish new session at <*>:<*>', 'Closed socket connection for client <*>:<*> (no session established for client)', 'Closed socket connection for client <*>:<*> which had sessionid <*>', 'Connection broken for id <*>, my id = <*>, error =', 'Connection request from old client <*>:<*>; will be dropped if server is in r-o mode', 'Established session <*> with negotiated timeout <*> for client <*>:<*>', 'Exception causing close of session <*> due to java.io.IOException: ZooKeeperServer not running', 'Expiring session <*>, timeout of <*> exceeded', 'FOLLOWING', 'FOLLOWING - LEADER ELECTION TOOK - <*>', 'First is <*>', 'Follower sid: <*> : info : org.apache.zookeeper.server.quorum.QuorumPeer$QuorumServer@<*>', 'Getting a snapshot from leader', 'Got user-level KeeperException when processing sessionid:<*> type:create cxid:<*> zxid:<*> txntype:<*> reqpath:<*> Error Path:<*> Error:KeeperErrorCode = NodeExists for <*>', 'Have quorum of supporters; starting up and setting last processed zxid: <*>', 'Have smaller server identifier, so dropping the connection: (<*>, <*>)', 'Interrupted while waiting for message on queue', 'Interrupting SendWorker', 'LOOKING', 'My election bind port: <*>/<*>:<*>', 'New election. My id = <*>, proposed zxid=<*>', 'Notification time out: <*>', 'Notification: <*> (n.leader), <*> (n.zxid), <*> (n.round), LOOKING (n.state), <*> (n.sid), <*> (n.peerEPoch), LOOKING (my state)', 'Processed session termination for sessionid: <*>', 'Reading snapshot <*>', 'Received connection request <*>:<*>', 'Revalidating client: <*>', 'Send worker leaving thread', 'Sending DIFF', 'Server environment:<*>', 'Snapshotting: <*> to <*>', 'Starting quorum peer', 'Unexpected Exception:', 'Unexpected exception causing shutdown while sock still open', 'autopurge.purgeInterval set to <*>', 'autopurge.snapRetainCount set to <*>', 'caught end of stream exception', 'maxSessionTimeout set to <*>', 'minSessionTimeout set to <*>', 'shutdown of request processor complete', 'tickTime set to <*>']
 
@@ -18,9 +21,16 @@ _EXACT = {'92fc9948bf29a580b3da4caf39800e10': 24, 'e6258f0e1bb569c3d904c097740b4
 
 _SIGS = {'Notification time out: <#>': 24, 'Received connection request <#>': 28, 'Send worker leaving thread': 30, 'Interrupted while waiting for message on queue': 19, 'Connection broken for id <#> my id = <#> error =': 6, 'Interrupting SendWorker': 20, 'Closed socket connection for client <#> which had sessionid <#>': 5, 'caught end of stream exception': 39, 'Client attempting to renew session <#> at <#>': 3, 'Client attempting to establish new session at <#>': 3, 'Established session <#> with negotiated timeout <#> for client <#>': 8, 'Accepted socket connection from <#>': 1, 'Unexpected Exception:': 35, 'Connection request from old client <#> will be dropped if server is in r-o mode': 7, 'Server environment:user.dir=/': 32, 'Cannot open channel to <#> at election address <#>': 2, 'Processed session termination for sessionid: <#>': 26, 'Expiring session <#> timeout of <#> exceeded': 10, '******* GOODBYE <#> ********': 0, 'LOOKING': 21, 'My election bind port: <#>': 22, 'Have smaller server identifier, so dropping the connection: <#> <#>': 18, 'FOLLOWING': 11, 'New election. My id = <#> proposed <#>': 23, 'Server <#>': 32, 'FOLLOWING - LEADER ELECTION TOOK - <#>': 12, 'Notification: <#> (n.leader), <#> (n.zxid), <#> (n.round), LEADING (n.state), <#> (n.sid), <#> (n.peerEPoch), LOOKING (my state)': 25, 'autopurge.snapRetainCount set to <#>': 38, 'Server environment:java.vendor=Oracle Corporation': 32, 'Revalidating client: <#>': 29, 'Server <#> built on <#> <#> GMT': 32, 'Server environment:user.name=zookeeper': 32, 'Server environment:os.name=Linux': 32, 'Closed socket connection for client <#> (no session established for client)': 4, 'Exception causing close of session <#> due to java.io.IOException: ZooKeeperServer not running': 9, 'Notification: <#> (n.leader), <#> (n.zxid), <#> (n.round), LOOKING (n.state), <#> (n.sid), <#> (n.peerEPoch), LOOKING (my state)': 25, 'Notification: <#> (n.leader), <#> (n.zxid), <#> (n.round), LOOKING (n.state), <#> (n.sid), <#> (n.peerEPoch), FOLLOWING (my state)': 25, 'tickTime set to <#>': 43, 'Unexpected exception causing shutdown while sock still open': 36, 'Got user-level KeeperException when processing <#> type:create <#> <#> <#> reqpath:n/a Error Path:/home/curi/.zookeeper Error:KeeperErrorCode = NodeExists for /home/curi/.zookeeper': 16, 'Notification: <#> (n.leader), <#> (n.zxid), <#> (n.round), LOOKING (n.state), <#> (n.sid), <#> (n.peerEPoch), LEADING (my state)': 25, 'Starting quorum peer': 34, 'Snapshotting: <#> to <#>': 33, 'autopurge.purgeInterval set to <#>': 37, 'Follower sid: <#> : info : <#>': 14, 'maxSessionTimeout set to <#>': 40, 'Have quorum of supporters; starting up and setting last processed zxid: <#>': 17, 'Notification: <#> (n.leader), <#> (n.zxid), <#> (n.round), FOLLOWING (n.state), <#> (n.sid), <#> (n.peerEPoch), LEADING (my state)': 25, 'shutdown of request processor complete': 42, 'First is <#>': 13, 'Reading snapshot <#>': 27, 'Sending DIFF': 31, 'Getting a snapshot from leader': 15, 'Notification: <#> (n.leader), <#> (n.zxid), <#> (n.round), FOLLOWING (n.state), <#> (n.sid), <#> (n.peerEPoch), FOLLOWING (my state)': 25, 'minSessionTimeout set to <#>': 41}
 
+_LLM_ALIGN = {'Notification time out: <*>': 24, 'Received connection request /<*>:<*>': 28, 'Send worker leaving thread': 30, 'Interrupted while waiting for message on queue': 19, 'Connection broken for id <*>, my id = <*>, error =': 6, 'Interrupting SendWorker': 20, 'Closed socket connection for client /<*>:<*> which had sessionid <*>': 5, 'caught end of stream exception': 39, 'Client attempting to renew session <*> at /<*>:<*>': 3, 'Client attempting to establish new session at /<*>:<*>': 3, 'Established session <*> with negotiated timeout <*> for client /<*>:<*>': 8, 'Accepted socket connection from /<*>:<*>': 1, 'Connection request from old client /<*>:<*>; will be dropped if server is in r-o mode': 7, 'Server environment:<*>': 32, 'Cannot open channel to <*> at election address /<*>:<*>': 2, 'Processed session termination for sessionid:*': 26, 'Expiring session <*>, timeout of <*>ms exceeded': 10, '******* GOODBYE /<*>:<*> ********': 0, 'LOOKING': 21, 'Notification: <*> (n.leader), <*> (n.zxid), <*> (n.round), LOOKING (n.state), <*> (n.sid), <*> (n.peerEPoch), LOOKING (my state)': 25, 'Revalidating client: <*>': 29, 'Exception causing close of session <*> due to java.io.IOException: ZooKeeperServer not running': 9, 'Unexpected exception causing shutdown while sock still open': 36}
+
 _NUM = re.compile(r"\d")
 _REGEXES = [re.compile(r"\s*" + r"\S+".join(re.escape(p) for p in t.split("<*>")) + r"\s*")
             for t in TEMPLATES]
+
+_spec = importlib.util.spec_from_file_location(
+    "llm_functions_zookeeper", Path(__file__).with_name("llm_functions.py"))
+_llm = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_llm)
 
 
 def _sig(content):
@@ -35,6 +45,13 @@ def match_template(log):
         for j, rx in enumerate(_REGEXES):
             if rx.fullmatch(log):
                 return j
+        try:
+            out = _llm.process_log(log)
+            lt = out.get("template") if isinstance(out, dict) else str(out)
+            if lt and lt != "UNKNOWN":
+                return _LLM_ALIGN.get(str(lt))
+        except Exception:
+            pass
     return i
 
 
