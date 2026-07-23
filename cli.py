@@ -182,8 +182,9 @@ def main():
                     help="Optional path to save results as JSON.")
     ap.add_argument("--system", default="BGL",
                     help="Parser bank system, e.g. BGL, HDFS, Apache (default: BGL).")
-    ap.add_argument("--bank", default="qwen2.5-7b", choices=["qwen2.5-7b", "qwen3-30b"],
-                    help="Parser bank model family (default: qwen2.5-7b).")
+    ap.add_argument("--bank", default="qwen2.5-7b",
+                    choices=["loghub-2k", "qwen2.5-7b", "qwen3-30b"],
+                    help="Parser bank family (default: qwen2.5-7b).")
     args = ap.parse_args()
 
     lines, df = _read_input(args.input)

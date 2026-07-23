@@ -120,9 +120,11 @@ so the quickstart reproduces the published parser metrics deterministically.
 ## Command Line Interface (CLI)
 
 The CLI (`cli.py`) parses and classifies log streams with a single command.
-Bank templates are normalized to the standard `<*>` wildcard style, and lines
-not covered by a bank function fall back to generic variable masking, so no
-line is left as `UNKNOWN`.
+Bank templates are normalized to the standard `<*>` wildcard style. For
+interactive convenience, lines not covered by a bank function fall back to
+generic variable masking instead of `UNKNOWN`; in the streaming pipeline
+(`realtime/`), such lines are labeled `UNKNOWN` and buffered for offline
+re-compilation, as described in the paper.
 
 ```bash
 # parse a raw log line (or a log file) with a pre-built Parser Bank
@@ -144,7 +146,7 @@ Options:
 | `--checkpoint` | `realtime/BGL/models/TableVIII_bgl_realtime_classifier.pth` | Pre-trained classifier checkpoint |
 | `--output` | none | Optional path to save results as JSON |
 | `--system` | `BGL` | Parser Bank system (e.g. `BGL`, `HDFS`, `Apache`) |
-| `--bank` | `qwen2.5-7b` | Parser Bank model family (`qwen2.5-7b` or `qwen3-30b`) |
+| `--bank` | `qwen2.5-7b` | Parser Bank family (`loghub-2k`, `qwen2.5-7b`, or `qwen3-30b`) |
 
 ## Running the pipeline on full datasets
 
