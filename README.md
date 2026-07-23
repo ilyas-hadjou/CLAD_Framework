@@ -3,15 +3,14 @@
 > 📄 **Publication**: This work will be published in the **45th IEEE International Symposium on Reliable Distributed Systems (SRDS 2026)**.
 
 CLAD is a two-stage tool for log analysis in distributed systems. An LLM
-is used **offline** to synthesize one small Python
-parsing function per log template, compiled into a *Parser Bank*; at runtime,
+is used offline to synthesize one small Python parsing function per log
+template, and these functions are compiled into a *Parser Bank*. At runtime,
 parsing is deterministic function matching with no LLM calls. A lightweight
 Transformer classifier then labels sliding windows of parsed event IDs as
 normal or anomalous in real time.
 
-⚡ **New**: CLAD now ships with an easy-to-use command-line interface
-([`cli.py`](cli.py)) — parse or classify any log file or raw log line with a
-single command, no notebooks required. See
+CLAD also includes a command-line interface ([`cli.py`](cli.py)) that can
+parse or classify a log file or a raw log line with a single command; see
 [Command Line Interface (CLI)](#command-line-interface-cli).
 
 ---
@@ -90,37 +89,36 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Requirements: Python ≥ 3.10, `torch 2.8.0` (pinned; the shipped checkpoints
-were saved with it). GPU is optional for everything except Parser Bank
-synthesis, which loads Qwen2.5-Coder-7B in FP16 (≈16 GB VRAM).
+Requirements: Python ≥ 3.10 and `torch 2.8.0` (pinned, since the shipped
+checkpoints were saved with it). A GPU is only needed for Parser Bank
+synthesis, which loads Qwen2.5-Coder-7B in FP16 (about 16 GB VRAM).
 
 ## Quick start
 
-Runs entirely from bundled data — no downloads, CPU is sufficient:
+The quickstart runs entirely from the bundled data. No downloads are needed
+and a CPU is sufficient:
 
 ```bash
 python quickstart.py
 ```
 
-Step 1 loads the pre-built Parser Bank (`parser/banks/loghub-2k/`) and parses
-the 11 bundled Loghub-2k systems using deterministic parser-function matching
-only — no Drain and no LLM at runtime — reproducing the paper's
-PA ≈ 0.98 / GA ≈ 0.94 / TA ≈ 0.91. The bundled Loghub-2k Parser Banks are
-offline-compiled artifacts generated from the historical template library
-used in the paper's supervised template-grounding procedure; they are
-provided to enable deterministic reproduction of the published parser
-metrics. Step 2
-loads the pre-trained real-time BGL
-classifier checkpoint and classifies the bundled labeled sample. The run
-completes in a few minutes and prints its progress; it should finish with
-`Quickstart finished.` and no errors.
+Step 1 loads the pre-built Parser Bank (`parser/banks/loghub-2k/`), parses
+the 11 bundled Loghub-2k systems, and scores the predictions against the
+bundled ground truth (expected averages: PA 0.98, GA 0.94, TA 0.91). Step 2
+loads the pre-trained real-time BGL classifier checkpoint and classifies the
+bundled labeled sample. The run completes in a few minutes, prints its
+progress, and should finish with `Quickstart finished.` and no errors.
+
+The bundled Loghub-2k Parser Banks were compiled offline from the historical
+template library used in the paper's supervised template-grounding procedure,
+so the quickstart reproduces the published parser metrics deterministically.
 
 ## Command Line Interface (CLI)
 
-CLAD provides a command-line interface (`cli.py`) that works out of the box —
-parse and classify log streams with a single command. Bank templates are
-normalized to the standard `<*>` wildcard style, and lines not covered by a
-bank function fall back to generic variable masking (no `UNKNOWN` outputs).
+The CLI (`cli.py`) parses and classifies log streams with a single command.
+Bank templates are normalized to the standard `<*>` wildcard style, and lines
+not covered by a bank function fall back to generic variable masking, so no
+line is left as `UNKNOWN`.
 
 ```bash
 # parse a raw log line (or a log file) with a pre-built Parser Bank
@@ -140,7 +138,7 @@ Options:
 | `--input` | (required) | Path to a log file / CSV, or a literal log text string |
 | `--mode` | `both` | `parse`, `classify`, or `both` |
 | `--checkpoint` | `realtime/BGL/models/TableVIII_bgl_realtime_classifier.pth` | Pre-trained classifier checkpoint |
-| `--output` | — | Optional path to save results as JSON |
+| `--output` | none | Optional path to save results as JSON |
 | `--system` | `BGL` | Parser Bank system (e.g. `BGL`, `HDFS`, `Apache`) |
 | `--bank` | `qwen2.5-7b` | Parser Bank model family (`qwen2.5-7b` or `qwen3-30b`) |
 
