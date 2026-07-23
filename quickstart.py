@@ -2,12 +2,14 @@
 """
 CLAD quickstart — runs entirely from the bundled data (no downloads, CPU is fine).
 
-Step 1: run the compiled Parser Bank over the 11 bundled Loghub-2k systems
-        and score PA/GA/TA against the corrected ground truth.
+Step 1: load the pre-built Parser Bank (compiled offline by the foundry) and
+        parse the 11 bundled Loghub-2k systems with deterministic function
+        matching only — no Drain, no LLM at runtime — then score PA/GA/TA
+        against the corrected ground truth.
 Step 2: load the shipped real-time classifier checkpoint and classify the
         bundled labeled BGL event-stream sample (sliding windows of 80 events).
 
-Usage:  python quickstart.py [qwen2.5-7b|qwen3-30b]
+Usage:  python quickstart.py [bank]   (default: loghub-2k)
 """
 import json
 import subprocess
@@ -19,14 +21,14 @@ import torch
 import torch.nn as nn
 
 ROOT = Path(__file__).resolve().parent
-BANK = sys.argv[1] if len(sys.argv) > 1 else "qwen2.5-7b"
+BANK = sys.argv[1] if len(sys.argv) > 1 else "loghub-2k"
 
 
 def step1_parser():
     print("=" * 70)
-    print("STEP 1: CLAD-Parser on Loghub-2k (template-grounded)")
+    print(f"STEP 1: CLAD-Parser on Loghub-2k (Parser Bank: {BANK})")
     print("=" * 70)
-    subprocess.run([sys.executable, str(ROOT / "parser/eval/run_parser_grounded.py")], check=True)
+    subprocess.run([sys.executable, str(ROOT / "parser/eval/run_parser_2k.py"), BANK], check=True)
     subprocess.run([sys.executable, str(ROOT / "parser/eval/score_parser.py"), "CLAD-Parser"], check=True)
 
 

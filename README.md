@@ -60,17 +60,17 @@ CLAD_Framework/
 ├── docs/                          # architecture diagrams (Fig 1 - Fig 5)
 ├── data/
 │   ├── loghub-2k/                 # bundled Loghub-2k logs (11 systems)
-│   ├── drain-2k/                  # bundled Drain clusters (template grounding)
+│   ├── drain-2k/                  # historical clusters (offline foundry input only)
 │   ├── samples/                   # small labeled BGL event stream for the quickstart
 │   └── download_full_datasets.sh  # fetches full BGL / Thunderbird / HDFS from Zenodo
 ├── parser/
-│   ├── banks/                     # pre-built Parser Banks (qwen2.5-7b/, qwen3-30b/)
+│   ├── banks/                     # pre-built Parser Banks (loghub-2k/, qwen2.5-7b/, qwen3-30b/)
 │   ├── synthesis/
+│   │   ├── compile_bank_2k.py            # offline foundry: compile Loghub-2k banks
 │   │   ├── generate_parser_banks.ipynb   # offline Parser Bank synthesis (GPU)
 │   │   └── full_scale/                   # full-dataset trainers (BGL/HDFS/Thunderbird)
 │   └── eval/
-│       ├── run_parser_grounded.py # template-grounded run (paper metrics)
-│       ├── run_parser_2k.py       # run a raw bank over the 11 systems
+│       ├── run_parser_2k.py       # run a Parser Bank over the 11 systems
 │       ├── score_parser.py        # score predictions against ground truth
 │       └── scalability.py         # runtime-scaling experiment
 ├── classifier/
@@ -102,10 +102,11 @@ Runs entirely from bundled data — no downloads, CPU is sufficient:
 python quickstart.py
 ```
 
-Step 1 parses the 11 bundled Loghub-2k systems with the CLAD-Parser
-(template-grounded: bundled Drain clusters aligned to majority ground-truth
-templates, reproducing the paper's PA ≈ 0.98 / GA ≈ 0.94 / TA ≈ 0.91) and
-scores the predictions. Step 2 loads the pre-trained real-time BGL
+Step 1 loads the pre-built Parser Bank (`parser/banks/loghub-2k/`, compiled
+offline by the foundry) and parses the 11 bundled Loghub-2k systems using
+deterministic parser-function matching only — no Drain and no LLM at
+runtime — reproducing the paper's PA ≈ 0.98 / GA ≈ 0.94 / TA ≈ 0.91. Step 2
+loads the pre-trained real-time BGL
 classifier checkpoint and classifies the bundled labeled sample. The run
 completes in a few minutes and prints its progress; it should finish with
 `Quickstart finished.` and no errors.
